@@ -1,75 +1,63 @@
-# React + TypeScript + Vite
+# 오늘몇교대? (TodayShift)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+장릉 오늘 가위바위보 결과는..??!!
 
-Currently, two official plugins are available:
+오늘 담당 턴과 근무 시간을 확인할 수 있는 PWA 기반 웹 애플리케이션
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📌 프로젝트 소개
 
-## React Compiler
+오늘몇교대는 교대 근무자가 매일 자신의 근무 순서와 시간을 빠르게 확인할 수 있도록 제작한 모바일 중심 웹 앱입니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+근무 인원 수에 따라 달라지는 교대 시간표를 선택하고, 자신의 담당 턴을 표시하여 오늘 근무 시간을 쉽게 확인할 수 있습니다.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## ✨ 주요 기능
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 현재 구현
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- 근무 인원 설정
+  - 1명 ~ 4명 근무 선택
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- 담당 턴 설정
+  - 내 담당 턴 선택
+  - 선택한 턴 강조 표시
 
-```
+- 교대 시간표 표시
+  - 근무 시간 표시
+  - 휴게 시간 표시
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- 모바일 대응 UI
+  - 모바일 화면 최적화
+  - PWA 구조 적용
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 예정 기능
 
-```
+- iOS Push Notification 지원
+- 근무 시작 전 알림
+- 사용자 설정 저장
+
+---
+
+## 🛠 기술 스택
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+
+### PWA
+
+- vite-plugin-pwa
+
+---
+
+## 🚀 실행 방법
+
+### 설치
+
+```bash
+npm install
