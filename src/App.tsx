@@ -2,7 +2,7 @@ import Header from "./components/home/Header";
 import ShiftSelector from "./components/home/ShiftSelector";
 import { useState } from "react";
 import ScheduleCard from "./components/home/ScheduleCard";
-import { schedulePatterns } from "./data/schedule";
+import { todaySchedule } from "./data/schedule";
 import TurnSelector from "./components/home/TurnSelector";
 import {
   getTodayText,
@@ -17,10 +17,6 @@ function App() {
   
   const [myTurn, setMyTurn] = 
     useState<number | null>(null);
-
-  const todaySchedule = schedulePatterns.find(
-    (schedule) => schedule.workerCount === workerCount
-  );
 
   return (
     <main className="min-h-screen bg-slate-200 flex justify-center">
@@ -51,14 +47,14 @@ function App() {
           </div>
 
           <CurrentShiftCard
-            schedule={todaySchedule?.shifts ?? []}
+            schedule={todaySchedule}
             workerCount={workerCount}
             myTurn={myTurn}
           />
 
           <NotificationSetting />
           <ScheduleCard
-            schedule={todaySchedule?.shifts ?? []}
+            schedule={todaySchedule}
             workerCount={workerCount}
             myTurn={myTurn}
           />

@@ -5,19 +5,9 @@ export type ScheduleItem = {
   label?: string;
 };
 
-export type SchedulePattern = {
-  workerCount: number;
-  name: string;
-  shifts: ScheduleItem[];
-};
 
-export const schedulePatterns: SchedulePattern[] = [
+export const todaySchedule: ScheduleItem[] = [
   {
-    workerCount: 4,
-    name: "4명 근무",
-
-    shifts: [
-        {
             type: "work",
             start: "08:55",
             end: "09:25",
@@ -92,6 +82,4 @@ export const schedulePatterns: SchedulePattern[] = [
             start: "15:55",
             end: "16:25",
         },
-    ]
-  }
 ];

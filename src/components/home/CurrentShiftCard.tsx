@@ -110,6 +110,9 @@ function CurrentShiftCard({
 
   const isMyShift = currentItem?.type === "work" && currentItem.turnNumber === myTurn;
   const remainingMinutes = currentItem ? currentItem.endMinutes - currentMinutes : 0;
+  const elapsedMinutes = currentItem ? currentMinutes - currentItem.startMinutes : 0;
+  const totalMinutes = currentItem ? currentItem.endMinutes - currentItem.startMinutes : 0;
+  const progress = totalMinutes > 0 ? Math.min((elapsedMinutes / totalMinutes) * 100, 100) : 0;
 
   let title = "근무 전";
   let detail = "오늘 근무 시작 전입니다.";
@@ -136,6 +139,23 @@ function CurrentShiftCard({
       <p className="text-sm font-medium text-gray-600">현재 상태</p>
       <h2 className="mt-1 text-xl font-bold">{title}</h2>
       <p className="mt-2 text-sm text-gray-600">{detail}</p>
+
+      {currentItem ? (
+        <div className="mt-4">
+          <div className="mb-1 flex justify-between text-xs text-gray-500">
+            <span>진행률</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white/80">
+            <div
+              className={
+                currentItem.type === "break" ? "h-full bg-amber-400 transition-all" : "h-full bg-green-500 transition-all"
+              }
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {nextMyShift ? (
         <div className="mt-4 rounded-lg bg-white/70 p-3 text-sm">
