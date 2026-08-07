@@ -8,15 +8,16 @@ import {
   getTodayText,
   getDefaultWorkerCount,
 } from "./utils/date";
-import NotificationSetting from "./components/home/NotificationSetting";
 import CurrentShiftCard from "./components/home/CurrentShiftCard";
 
 function App() {
   const [workerCount, setWorkerCount] = 
     useState<number | null>(getDefaultWorkerCount());
-  
   const [myTurn, setMyTurn] = 
     useState<number | null>(null);
+  const [isSetupEditing, setIsSetupEditing] = useState(true);
+
+  const isSetupComplete = workerCount !== null && myTurn !== null;
 
   return (
     <main className="min-h-screen bg-slate-200 flex justify-center">
@@ -27,23 +28,45 @@ function App() {
         {/* Main */}
         <section className="p-5 space-y-6">
           <div className="rounded-xl border p-5">
-            <h2 className="font-semibold mb-4">
-              오늘 근무 인원 설정
-            </h2>
+            {isSetupComplete && !isSetupEditing ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">오늘의 설정</p>
+                  <p className="mt-1 font-semibold">
+                    {workerCount}명 근무 · 내 담당 {myTurn}턴
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSetupEditing(true)}
+                  className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700"
+                >
+                  수정
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2 className="font-semibold mb-4">
+                  오늘 근무 인원 설정
+                </h2>
 
-            <ShiftSelector
-              workerCount={workerCount}
-              setWorkerCount={(count) => {
-                setWorkerCount(count);
-                setMyTurn(null);
-              }}
-            />
-            <TurnSelector
-              workerCount={workerCount}
-              myTurn={myTurn}
-              setMyTurn={setMyTurn}
-            />
-            
+                <ShiftSelector
+                  workerCount={workerCount}
+                  setWorkerCount={(count) => {
+                    setWorkerCount(count);
+                    setMyTurn(null);
+                  }}
+                />
+                <TurnSelector
+                  workerCount={workerCount}
+                  myTurn={myTurn}
+                  setMyTurn={(turn) => {
+                    setMyTurn(turn);
+                    setIsSetupEditing(false);
+                  }}
+                />
+              </>
+            )}
           </div>
 
           <CurrentShiftCard
@@ -52,11 +75,6 @@ function App() {
             myTurn={myTurn}
           />
 
-          <NotificationSetting
-            schedule={todaySchedule}
-            workerCount={workerCount}
-            myTurn={myTurn}
-          />
           <ScheduleCard
             schedule={todaySchedule}
             workerCount={workerCount}

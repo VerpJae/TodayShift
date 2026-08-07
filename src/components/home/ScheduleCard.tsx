@@ -1,4 +1,5 @@
 import type { ScheduleItem } from "../../data/schedule";
+import NotificationSetting from "./NotificationSetting";
 
 type ScheduleCardProps = {
   schedule: ScheduleItem[];
@@ -13,9 +14,14 @@ function ScheduleCard({
 }: ScheduleCardProps) {
   return (
     <div className="rounded-xl border p-5">
-      <h2 className="font-semibold mb-4">
-        오늘 시간표
-      </h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="font-semibold">오늘 시간표</h2>
+        <NotificationSetting
+          schedule={schedule}
+          workerCount={workerCount}
+          myTurn={myTurn}
+        />
+      </div>
 
       {workerCount === null ? (
         <p className="text-gray-400">

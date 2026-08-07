@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ScheduleItem } from "../../data/schedule";
 
 type NotificationSettingProps = {
@@ -32,6 +31,9 @@ function NotificationSetting({
         ? Notification.permission
         : "denied"
     );
+  const [isEnabled, setIsEnabled] = useState(
+    () => localStorage.getItem("shift-notifications-enabled") !== "false",
+  );
 
 
   const requestPermission = async () => {
@@ -42,25 +44,30 @@ function NotificationSetting({
     const result = await Notification.requestPermission();
 
     setPermission(result);
+
+    if (result === "granted") {
+      setIsEnabled(true);
+      localStorage.setItem("shift-notifications-enabled", "true");
+    }
   };
 
 
-  const sendTestNotification = () => {
-    if (
-        !("Notification" in window) ||
-        permission !== "granted"
-    ) {
-        return;
+  const toggleNotifications = () => {
+    if (permission !== "granted") {
+      void requestPermission();
+      return;
     }
 
-    new Notification("TodayShift", {
-        body: "알림 테스트입니다.",
+    setIsEnabled((enabled) => {
+      localStorage.setItem("shift-notifications-enabled", String(!enabled));
+      return !enabled;
     });
   };
 
   useEffect(() => {
     if (
       permission !== "granted" ||
+      !isEnabled ||
       workerCount === null ||
       myTurn === null
     ) {
@@ -105,50 +112,27 @@ function NotificationSetting({
     const intervalId = window.setInterval(checkShiftNotifications, 30_000);
 
     return () => window.clearInterval(intervalId);
-  }, [myTurn, permission, schedule, workerCount]);
+  }, [isEnabled, myTurn, permission, schedule, workerCount]);
 
 
   return (
-    <div className="rounded-xl border p-5">
-      <h2 className="font-semibold mb-4">
-        알림 설정
-      </h2>
-
-
-      {permission === "granted" ? (
-        <div className="space-y-3">
-          <p className="text-sm text-green-600">
-            🔔 알림이 켜져 있습니다.
-          </p>
-          <p className="text-sm text-gray-500">
-            내 근무 시작 5분 전에 알려드립니다.
-          </p>
-
-          <button
-            onClick={sendTestNotification}
-            className="
-              w-full
-              rounded-lg
-              bg-blue-500
-              p-3
-              text-white
-            "
-          >
-            테스트 알림 보내기
-          </button>
-        </div>
+    <div className="shrink-0">
+      {permission === "granted" && isEnabled ? (
+        <button
+          type="button"
+          onClick={toggleNotifications}
+          title="탭하면 근무 알림을 끕니다."
+          className="rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700"
+        >
+          🔔 켜짐
+        </button>
       ) : (
         <button
-          onClick={requestPermission}
-          className="
-            w-full
-            rounded-lg
-            bg-blue-500
-            p-3
-            text-white
-          "
+          type="button"
+          onClick={toggleNotifications}
+          className="rounded-md bg-slate-200 px-2 py-1 text-xs font-medium text-slate-700"
         >
-          🔔 알림 켜기
+          🔕 꺼짐
         </button>
       )}
     </div>
