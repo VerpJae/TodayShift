@@ -52,7 +52,11 @@ function App() {
             myTurn={myTurn}
           />
 
-          <NotificationSetting />
+          <NotificationSetting
+            schedule={todaySchedule}
+            workerCount={workerCount}
+            myTurn={myTurn}
+          />
           <ScheduleCard
             schedule={todaySchedule}
             workerCount={workerCount}
