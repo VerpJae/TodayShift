@@ -22,7 +22,7 @@ function ShiftSelector({
             }
           `}
         >
-          {n}교대
+          {n}명
         </button>
       ))}
     </div>
