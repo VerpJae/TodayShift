@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: "autoUpdate",
 
       manifest: {
-        name: "TodayShift",
-        short_name: "TodayShift",
+        name: "오늘몇교대?",
+        short_name: "오늘몇교대?",
         description: "오늘 내 근무 턴 확인 앱",
         theme_color: "#ffffff",
         icons: [],
