@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { ScheduleItem } from "../../data/schedule";
 import NotificationSetting from "./NotificationSetting";
 
@@ -7,11 +8,33 @@ type ScheduleCardProps = {
   myTurn: number | null;
 };
 
+function toMinutes(time: string | undefined) {
+  if (!time) {
+    return null;
+  }
+
+  const [hours, minutes] = time.split(":").map(Number);
+
+  return Number.isNaN(hours) || Number.isNaN(minutes)
+    ? null
+    : hours * 60 + minutes;
+}
+
 function ScheduleCard({
   schedule,
   workerCount,
   myTurn,
 }: ScheduleCardProps) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(new Date()), 30_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
   return (
     <div className="rounded-xl border p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -33,23 +56,37 @@ function ScheduleCard({
                 let workIndex = 0;
 
                 return schedule.map((item, index) => {
+                const startMinutes = toMinutes(item.start);
+                const endMinutes = toMinutes(item.end);
+                const isCurrent =
+                  startMinutes !== null &&
+                  endMinutes !== null &&
+                  startMinutes <= currentMinutes &&
+                  currentMinutes < endMinutes;
+                const isPast = endMinutes !== null && currentMinutes >= endMinutes;
+                const timeStateClass = isCurrent
+                  ? "ring-2 ring-blue-500 shadow-lg"
+                  : isPast
+                    ? "shadow-inner opacity-55"
+                    : "shadow-sm";
+
                 if (item.type === "break") {
                     return (
                     <div
                         key={index}
-                        className="
-                        rounded-lg
-                        bg-gray-200
-                        p-3
-                        text-center
-                        text-gray-500
-                        "
+                        className={`relative rounded-lg bg-gray-200 p-3 text-center text-gray-500 transition ${timeStateClass}`}
                     >
                         🍚 {item.label}
 
                         <span className="ml-2">
                         {item.start} - {item.end}
                         </span>
+
+                        {isCurrent ? (
+                          <span className="ml-2 rounded bg-blue-500 px-1.5 py-0.5 text-xs font-medium text-white">
+                            지금
+                          </span>
+                        ) : null}
                     </div>
                     );
                 }
@@ -64,9 +101,11 @@ function ScheduleCard({
                     <div
                     key={index}
                     className={`
-                        flex justify-between
+                        relative flex justify-between
                         rounded-lg
                         p-3
+                        transition
+                        ${timeStateClass}
 
                         ${
                         isMyTurn
@@ -82,6 +121,12 @@ function ScheduleCard({
                     <span>
                         {item.start} - {item.end}
                     </span>
+
+                    {isCurrent ? (
+                      <span className="absolute -right-1 -top-2 rounded bg-blue-500 px-1.5 py-0.5 text-xs font-medium text-white shadow">
+                        지금
+                      </span>
+                    ) : null}
                     </div>
                 );
                 });
