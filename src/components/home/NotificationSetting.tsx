@@ -7,18 +7,26 @@ type NotificationSettingProps = {
   myTurn: number | null;
 };
 
-function toMinutes(time: string | undefined) {
-  if (!time) {
-    return null;
-  }
+const REMINDER_WORKER_URL = "https://today-turn-reminder.verp.workers.dev";
 
-  const [hours, minutes] = time.split(":").map(Number);
+function urlBase64ToUint8Array(value: string) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
 
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-    return null;
-  }
+  return Uint8Array.from(rawData, (character) => character.charCodeAt(0));
+}
 
-  return hours * 60 + minutes;
+async function saveSettings(
+  schedule: ScheduleItem[],
+  workerCount: number,
+  myTurn: number,
+) {
+  await fetch(`${REMINDER_WORKER_URL}/api/config`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ schedule, workerCount, myTurn }),
+  });
 }
 
 function NotificationSetting({
@@ -27,93 +35,82 @@ function NotificationSetting({
   myTurn,
 }: NotificationSettingProps) {
   const [permission, setPermission] = useState(
-    "Notification" in window
-        ? Notification.permission
-        : "denied"
-    );
+    "Notification" in window ? Notification.permission : "denied",
+  );
   const [isEnabled, setIsEnabled] = useState(
     () => localStorage.getItem("shift-notifications-enabled") !== "false",
   );
 
+  useEffect(() => {
+    if (permission !== "granted" || !isEnabled || workerCount === null || myTurn === null) {
+      return;
+    }
 
-  const requestPermission = async () => {
-    if (!("Notification" in window)) {
-        return;
+    void saveSettings(schedule, workerCount, myTurn);
+  }, [isEnabled, myTurn, permission, schedule, workerCount]);
+
+  const enableNotifications = async () => {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      return;
     }
 
     const result = await Notification.requestPermission();
-
     setPermission(result);
 
-    if (result === "granted") {
-      setIsEnabled(true);
-      localStorage.setItem("shift-notifications-enabled", "true");
+    if (result !== "granted") {
+      return;
     }
+
+    const registration = await navigator.serviceWorker.ready;
+    const { publicKey } = await fetch(`${REMINDER_WORKER_URL}/vapid-public-key`).then(
+      async (response) => response.json() as Promise<{ publicKey: string }>,
+    );
+    const subscription =
+      (await registration.pushManager.getSubscription()) ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      }));
+
+    await fetch(`${REMINDER_WORKER_URL}/api/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: subscription.toJSON() }),
+    });
+
+    if (workerCount !== null && myTurn !== null) {
+      await saveSettings(schedule, workerCount, myTurn);
+    }
+
+    setIsEnabled(true);
+    localStorage.setItem("shift-notifications-enabled", "true");
   };
 
+  const disableNotifications = async () => {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+      await fetch(`${REMINDER_WORKER_URL}/api/unsubscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      });
+      await subscription.unsubscribe();
+    }
+
+    setIsEnabled(false);
+    localStorage.setItem("shift-notifications-enabled", "false");
+  };
 
   const toggleNotifications = () => {
-    if (permission !== "granted") {
-      void requestPermission();
+    if (permission === "granted" && isEnabled) {
+      void disableNotifications();
       return;
     }
 
-    setIsEnabled((enabled) => {
-      localStorage.setItem("shift-notifications-enabled", String(!enabled));
-      return !enabled;
-    });
+    void enableNotifications();
   };
-
-  useEffect(() => {
-    if (
-      permission !== "granted" ||
-      !isEnabled ||
-      workerCount === null ||
-      myTurn === null
-    ) {
-      return;
-    }
-
-    const checkShiftNotifications = () => {
-      const now = new Date();
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      const todayKey = now.toISOString().slice(0, 10);
-      let workIndex = 0;
-
-      schedule.forEach((item) => {
-        if (item.type !== "work") {
-          return;
-        }
-
-        const turnNumber = (workIndex++ % workerCount) + 1;
-        const startMinutes = toMinutes(item.start);
-
-        if (turnNumber !== myTurn || startMinutes === null) {
-          return;
-        }
-
-        const reminderMinutes = startMinutes - 5;
-        const notificationKey = `shift-reminder:${todayKey}:${item.start}:${myTurn}`;
-
-        if (
-          nowMinutes >= reminderMinutes &&
-          nowMinutes < startMinutes &&
-          !sessionStorage.getItem(notificationKey)
-        ) {
-          new Notification("오늘몇교대", {
-            body: `5분 뒤 ${turnNumber}턴 근무가 시작됩니다. (${item.start} - ${item.end})`,
-          });
-          sessionStorage.setItem(notificationKey, "sent");
-        }
-      });
-    };
-
-    checkShiftNotifications();
-    const intervalId = window.setInterval(checkShiftNotifications, 30_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [isEnabled, myTurn, permission, schedule, workerCount]);
-
 
   return (
     <div className="shrink-0">
@@ -132,7 +129,7 @@ function NotificationSetting({
           onClick={toggleNotifications}
           className="rounded-md bg-slate-200 px-2 py-1 text-xs font-medium text-slate-700"
         >
-          🔕 꺼짐
+          🔕 알림 켜기
         </button>
       )}
     </div>

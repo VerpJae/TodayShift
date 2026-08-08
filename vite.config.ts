@@ -10,12 +10,19 @@ export default defineConfig({
 
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "service-worker.ts",
+      injectManifest: {
+        injectionPoint: undefined,
+      },
 
       manifest: {
         name: "오늘은몇턴?",
         short_name: "오늘은몇턴?",
         description: "오늘 내 근무 턴 확인 앱",
         theme_color: "#ffffff",
+        display: "standalone",
         icons: [],
       },
     }),
