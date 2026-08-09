@@ -1,6 +1,6 @@
 import Header from "./components/home/Header";
 import ShiftSelector from "./components/home/ShiftSelector";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ScheduleCard from "./components/home/ScheduleCard";
 import { todaySchedule } from "./data/schedule";
 import TurnSelector from "./components/home/TurnSelector";
@@ -9,24 +9,69 @@ import {
   getDefaultWorkerCount,
 } from "./utils/date";
 import CurrentShiftCard from "./components/home/CurrentShiftCard";
+import { APP_VERSION } from "./version";
+
+type SavedTodaySetup = {
+  workerCount: number;
+  myTurn: number;
+};
+
+function getTodayStorageKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const date = String(today.getDate()).padStart(2, "0");
+
+  return `today-turn-setup:${year}-${month}-${date}`;
+}
+
+function getSavedTodaySetup(): SavedTodaySetup | null {
+  const saved = localStorage.getItem(getTodayStorageKey());
+
+  if (!saved) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(saved) as SavedTodaySetup;
+
+    return Number.isInteger(parsed.workerCount) && Number.isInteger(parsed.myTurn)
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 function App() {
-  const [workerCount, setWorkerCount] = 
-    useState<number | null>(getDefaultWorkerCount());
-  const [myTurn, setMyTurn] = 
-    useState<number | null>(null);
-  const [isSetupEditing, setIsSetupEditing] = useState(true);
+  const [savedTodaySetup] = useState(getSavedTodaySetup);
+  const [workerCount, setWorkerCount] = useState<number | null>(
+    savedTodaySetup?.workerCount ?? getDefaultWorkerCount(),
+  );
+  const [myTurn, setMyTurn] = useState<number | null>(savedTodaySetup?.myTurn ?? null);
+  const [isSetupEditing, setIsSetupEditing] = useState(!savedTodaySetup);
 
   const isSetupComplete = workerCount !== null && myTurn !== null;
 
+  useEffect(() => {
+    if (!isSetupComplete || workerCount === null || myTurn === null) {
+      return;
+    }
+
+    localStorage.setItem(
+      getTodayStorageKey(),
+      JSON.stringify({ workerCount, myTurn }),
+    );
+  }, [isSetupComplete, myTurn, workerCount]);
+
   return (
     <main className="min-h-screen bg-slate-200 flex justify-center">
-      <div className="w-full max-w-md min-h-screen bg-white md:my-8 md:min-h-[800px] md:rounded-2xl md:shadow-2xl overflow-hidden">
+      <div className="flex min-h-screen w-full max-w-md flex-col overflow-hidden bg-white md:my-8 md:min-h-[800px] md:rounded-2xl md:shadow-2xl">
         {/* Header */}
         <Header dateText={getTodayText()} />
 
         {/* Main */}
-        <section className="p-5 space-y-6">
+        <section className="flex-1 space-y-6 p-5">
           <div className="rounded-xl border p-5">
             {isSetupComplete && !isSetupEditing ? (
               <div className="flex items-center justify-between">
@@ -55,6 +100,7 @@ function App() {
                   setWorkerCount={(count) => {
                     setWorkerCount(count);
                     setMyTurn(null);
+                    localStorage.removeItem(getTodayStorageKey());
                   }}
                 />
                 <TurnSelector
@@ -81,6 +127,10 @@ function App() {
             myTurn={myTurn}
           />
         </section>
+
+        <footer className="px-5 pb-4 text-center text-xs text-slate-400">
+          v{APP_VERSION}
+        </footer>
       </div>
     </main>
   );

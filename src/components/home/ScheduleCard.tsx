@@ -39,12 +39,13 @@ function ScheduleCard({
     <div className="rounded-xl border p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="font-semibold">오늘 시간표</h2>
-        <NotificationSetting
-          schedule={schedule}
-          workerCount={workerCount}
-          myTurn={myTurn}
-        />
       </div>
+
+      <NotificationSetting
+        schedule={schedule}
+        workerCount={workerCount}
+        myTurn={myTurn}
+      />
 
       {workerCount === null ? (
         <p className="text-gray-400">
@@ -65,16 +66,22 @@ function ScheduleCard({
                   currentMinutes < endMinutes;
                 const isPast = endMinutes !== null && currentMinutes >= endMinutes;
                 const timeStateClass = isCurrent
-                  ? "ring-2 ring-blue-500 shadow-lg"
+                  ? "ring-2 ring-blue-600 shadow-lg"
                   : isPast
-                    ? "shadow-inner opacity-55"
+                    ? "shadow-inner"
                     : "shadow-sm";
 
                 if (item.type === "break") {
                     return (
                     <div
                         key={index}
-                        className={`relative rounded-lg bg-gray-200 p-3 text-center text-gray-500 transition ${timeStateClass}`}
+                        className={`relative rounded-lg p-3 text-center transition ${timeStateClass} ${
+                          isPast
+                            ? "bg-slate-300 text-slate-500"
+                            : isCurrent
+                              ? "bg-blue-100 text-blue-900"
+                              : "bg-gray-200 text-gray-500"
+                        }`}
                     >
                         🍚 {item.label}
 
@@ -87,6 +94,10 @@ function ScheduleCard({
                             지금
                           </span>
                         ) : null}
+
+                        {isPast ? (
+                          <span className="ml-2 text-xs font-medium text-slate-500">완료</span>
+                        ) : null}
                     </div>
                     );
                 }
@@ -96,6 +107,13 @@ function ScheduleCard({
 
                 const isMyTurn =
                     turnNumber === myTurn;
+                const workStateClass = isPast
+                  ? "bg-slate-300 text-slate-500"
+                  : isCurrent
+                    ? "bg-blue-100 font-bold text-blue-950"
+                    : isMyTurn
+                      ? "bg-yellow-300 font-bold"
+                      : "bg-slate-100";
 
                 return (
                     <div
@@ -107,11 +125,7 @@ function ScheduleCard({
                         transition
                         ${timeStateClass}
 
-                        ${
-                        isMyTurn
-                            ? "bg-yellow-300 font-bold"
-                            : "bg-slate-100"
-                        }
+                        ${workStateClass}
                     `}
                     >
                     <span>
@@ -125,6 +139,12 @@ function ScheduleCard({
                     {isCurrent ? (
                       <span className="absolute -right-1 -top-2 rounded bg-blue-500 px-1.5 py-0.5 text-xs font-medium text-white shadow">
                         지금
+                      </span>
+                    ) : null}
+
+                    {isPast ? (
+                      <span className="absolute -right-1 -top-2 rounded bg-slate-500 px-1.5 py-0.5 text-xs font-medium text-white shadow">
+                        완료
                       </span>
                     ) : null}
                     </div>
