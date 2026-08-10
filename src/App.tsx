@@ -13,6 +13,7 @@ import { APP_VERSION } from "./version";
 import AdminPage from "./components/admin/AdminPage";
 import UpdatePrompt from "./components/UpdatePrompt";
 import WeeklyOffDaySetting from "./components/home/WeeklyOffDaySetting";
+import { REMINDER_WORKER_URL } from "./config/reminder";
 
 type SavedTodaySetup = {
   workerCount: number;
@@ -112,6 +113,34 @@ function App() {
       JSON.stringify({ workerCount, myTurn }),
     );
   }, [isSetupComplete, myTurn, todayStorageKey, workerCount]);
+
+  useEffect(() => {
+    if (
+      !("Notification" in window) ||
+      !("serviceWorker" in navigator) ||
+      Notification.permission !== "granted"
+    ) {
+      return;
+    }
+
+    void navigator.serviceWorker.ready
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((subscription) => {
+        if (!subscription) {
+          return;
+        }
+
+        return fetch(`${REMINDER_WORKER_URL}/api/off-status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: subscription.endpoint,
+            date: todayStorageKey.slice(-10),
+            isOff: isTodayOff,
+          }),
+        });
+      });
+  }, [isTodayOff, todayStorageKey]);
 
   useEffect(() => {
     const updatePage = () => setIsAdminPage(window.location.hash === "#/admin");

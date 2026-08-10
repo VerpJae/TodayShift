@@ -24,10 +24,23 @@ async function saveSettings(
   myTurn: number,
   reminderOffsets: number[],
 ) {
+  const registration = await navigator.serviceWorker.ready;
+  const subscription = await registration.pushManager.getSubscription();
+
+  if (!subscription) {
+    return;
+  }
+
   await fetch(`${REMINDER_WORKER_URL}/api/config`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ schedule, workerCount, myTurn, reminderOffsets }),
+    body: JSON.stringify({
+      endpoint: subscription.endpoint,
+      schedule,
+      workerCount,
+      myTurn,
+      reminderOffsets,
+    }),
   });
 }
 
