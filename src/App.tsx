@@ -11,6 +11,7 @@ import {
 import CurrentShiftCard from "./components/home/CurrentShiftCard";
 import { APP_VERSION } from "./version";
 import AdminPage from "./components/admin/AdminPage";
+import UpdatePrompt from "./components/UpdatePrompt";
 
 type SavedTodaySetup = {
   workerCount: number;
@@ -163,6 +164,7 @@ function App() {
           v{APP_VERSION}
         </footer>
       </div>
+      <UpdatePrompt />
     </main>
   );
 }
