@@ -2,6 +2,16 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    void self.skipWaiting();
+  }
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("push", (event) => {
   const payload = event.data?.json() as
     | { title?: string; body?: string; url?: string }
