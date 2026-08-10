@@ -12,11 +12,14 @@ import CurrentShiftCard from "./components/home/CurrentShiftCard";
 import { APP_VERSION } from "./version";
 import AdminPage from "./components/admin/AdminPage";
 import UpdatePrompt from "./components/UpdatePrompt";
+import WeeklyOffDaySetting from "./components/home/WeeklyOffDaySetting";
 
 type SavedTodaySetup = {
   workerCount: number;
   myTurn: number;
 };
+
+type TodayOffOverride = "off" | "work" | null;
 
 function getTodayStorageKey() {
   const today = new Date();
@@ -45,6 +48,28 @@ function getSavedTodaySetup(): SavedTodaySetup | null {
   }
 }
 
+function getWeeklyOffDays() {
+  const saved = localStorage.getItem("weekly-off-days");
+
+  if (!saved) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(saved) as number[];
+    return Array.isArray(parsed)
+      ? parsed.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function getTodayOffOverride(): TodayOffOverride {
+  const value = localStorage.getItem(`today-off-override:${getTodayStorageKey().slice(-10)}`);
+  return value === "off" || value === "work" ? value : null;
+}
+
 function App() {
   const [todayStorageKey, setTodayStorageKey] = useState(getTodayStorageKey);
   const [savedTodaySetup] = useState(getSavedTodaySetup);
@@ -56,8 +81,26 @@ function App() {
   const [isAdminPage, setIsAdminPage] = useState(
     () => window.location.hash === "#/admin",
   );
+  const [weeklyOffDays, setWeeklyOffDays] = useState(getWeeklyOffDays);
+  const [todayOffOverride, setTodayOffOverride] = useState<TodayOffOverride>(getTodayOffOverride);
 
   const isSetupComplete = workerCount !== null && myTurn !== null;
+  const todayDay = new Date().getDay();
+  const isTodayOff =
+    todayOffOverride === "off" ||
+    (todayOffOverride !== "work" && weeklyOffDays.includes(todayDay));
+
+  const updateTodayOffOverride = (override: TodayOffOverride) => {
+    const key = `today-off-override:${getTodayStorageKey().slice(-10)}`;
+
+    if (override) {
+      localStorage.setItem(key, override);
+    } else {
+      localStorage.removeItem(key);
+    }
+
+    setTodayOffOverride(override);
+  };
 
   useEffect(() => {
     if (!isSetupComplete || workerCount === null || myTurn === null) {
@@ -89,7 +132,7 @@ function App() {
     };
 
     checkForUpdate();
-    const intervalId = window.setInterval(checkForUpdate, 30 * 60_000);
+    const intervalId = window.setInterval(checkForUpdate, 24 * 60 * 60_000);
 
     return () => window.clearInterval(intervalId);
   }, []);
@@ -104,6 +147,7 @@ function App() {
       setWorkerCount(getDefaultWorkerCount());
       setMyTurn(null);
       setIsSetupEditing(true);
+      setTodayOffOverride(getTodayOffOverride());
     }, 60_000);
 
     return () => window.clearInterval(intervalId);
@@ -111,6 +155,39 @@ function App() {
 
   if (isAdminPage) {
     return <AdminPage />;
+  }
+
+  if (isTodayOff) {
+    return (
+      <main className="min-h-screen bg-slate-200 flex justify-center">
+        <div className="flex min-h-screen w-full max-w-md flex-col overflow-hidden bg-white md:my-8 md:min-h-[800px] md:rounded-2xl md:shadow-2xl">
+          <Header dateText={getTodayText()} />
+          <section className="flex-1 space-y-6 p-5">
+            <div className="rounded-xl border border-violet-200 bg-violet-50 p-5 text-center">
+              <h2 className="font-semibold text-violet-950">오늘은 휴무일입니다</h2>
+              <p className="mt-2 text-sm text-violet-700">휴무일 설정은 아래에서 변경할 수 있습니다.</p>
+              <button
+                type="button"
+                onClick={() => updateTodayOffOverride("work")}
+                className="mt-4 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white"
+              >
+                오늘 근무하기
+              </button>
+            </div>
+            <WeeklyOffDaySetting
+              offDays={weeklyOffDays}
+              setOffDays={setWeeklyOffDays}
+              todayDay={todayDay}
+              todayOverride={todayOffOverride}
+              todayIsOff={isTodayOff}
+              setTodayOverride={updateTodayOffOverride}
+            />
+          </section>
+          <footer className="px-5 pb-4 text-center text-xs text-slate-400">v{APP_VERSION}</footer>
+        </div>
+        <UpdatePrompt />
+      </main>
+    );
   }
 
   return (
@@ -121,6 +198,14 @@ function App() {
 
         {/* Main */}
         <section className="flex-1 space-y-6 p-5">
+          <WeeklyOffDaySetting
+            offDays={weeklyOffDays}
+            setOffDays={setWeeklyOffDays}
+            todayDay={todayDay}
+            todayOverride={todayOffOverride}
+            todayIsOff={isTodayOff}
+            setTodayOverride={updateTodayOffOverride}
+          />
           <div className="rounded-xl border p-5">
             {isSetupComplete && !isSetupEditing ? (
               <div className="flex items-center justify-between">
