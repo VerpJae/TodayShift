@@ -78,6 +78,23 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const checkForUpdate = () => {
+      void navigator.serviceWorker
+        .getRegistration()
+        .then((registration) => registration?.update());
+    };
+
+    checkForUpdate();
+    const intervalId = window.setInterval(checkForUpdate, 30 * 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       if (getTodayStorageKey() === todayStorageKey) {
         return;

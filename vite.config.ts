@@ -7,6 +7,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), VitePWA({
+    injectRegister: false,
     registerType: "prompt",
     strategies: "injectManifest",
     srcDir: "src",
