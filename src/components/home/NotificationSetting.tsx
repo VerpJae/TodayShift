@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ScheduleItem } from "../../data/schedule";
+import { REMINDER_WORKER_URL } from "../../config/reminder";
 
 type NotificationSettingProps = {
   schedule: ScheduleItem[];
@@ -7,7 +8,6 @@ type NotificationSettingProps = {
   myTurn: number | null;
 };
 
-const REMINDER_WORKER_URL = "https://today-turn-reminder.verp.workers.dev";
 const REMINDER_OPTIONS = [0, 3, 5];
 
 function urlBase64ToUint8Array(value: string) {

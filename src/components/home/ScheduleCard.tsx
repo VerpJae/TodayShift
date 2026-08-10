@@ -95,9 +95,6 @@ function ScheduleCard({
                           </span>
                         ) : null}
 
-                        {isPast ? (
-                          <span className="ml-2 text-xs font-medium text-slate-500">완료</span>
-                        ) : null}
                     </div>
                     );
                 }
@@ -108,7 +105,9 @@ function ScheduleCard({
                 const isMyTurn =
                     turnNumber === myTurn;
                 const workStateClass = isPast
-                  ? "bg-slate-300 text-slate-500"
+                  ? isMyTurn
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-slate-300 text-slate-500"
                   : isCurrent
                     ? "bg-blue-100 font-bold text-blue-950"
                     : isMyTurn
@@ -142,11 +141,6 @@ function ScheduleCard({
                       </span>
                     ) : null}
 
-                    {isPast ? (
-                      <span className="absolute -right-1 -top-2 rounded bg-slate-500 px-1.5 py-0.5 text-xs font-medium text-white shadow">
-                        완료
-                      </span>
-                    ) : null}
                     </div>
                 );
                 });

@@ -10,6 +10,7 @@ import {
 } from "./utils/date";
 import CurrentShiftCard from "./components/home/CurrentShiftCard";
 import { APP_VERSION } from "./version";
+import AdminPage from "./components/admin/AdminPage";
 
 type SavedTodaySetup = {
   workerCount: number;
@@ -44,12 +45,16 @@ function getSavedTodaySetup(): SavedTodaySetup | null {
 }
 
 function App() {
+  const [todayStorageKey, setTodayStorageKey] = useState(getTodayStorageKey);
   const [savedTodaySetup] = useState(getSavedTodaySetup);
   const [workerCount, setWorkerCount] = useState<number | null>(
     savedTodaySetup?.workerCount ?? getDefaultWorkerCount(),
   );
   const [myTurn, setMyTurn] = useState<number | null>(savedTodaySetup?.myTurn ?? null);
   const [isSetupEditing, setIsSetupEditing] = useState(!savedTodaySetup);
+  const [isAdminPage, setIsAdminPage] = useState(
+    () => window.location.hash === "#/admin",
+  );
 
   const isSetupComplete = workerCount !== null && myTurn !== null;
 
@@ -59,10 +64,36 @@ function App() {
     }
 
     localStorage.setItem(
-      getTodayStorageKey(),
+      todayStorageKey,
       JSON.stringify({ workerCount, myTurn }),
     );
-  }, [isSetupComplete, myTurn, workerCount]);
+  }, [isSetupComplete, myTurn, todayStorageKey, workerCount]);
+
+  useEffect(() => {
+    const updatePage = () => setIsAdminPage(window.location.hash === "#/admin");
+
+    window.addEventListener("hashchange", updatePage);
+    return () => window.removeEventListener("hashchange", updatePage);
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (getTodayStorageKey() === todayStorageKey) {
+        return;
+      }
+
+      setTodayStorageKey(getTodayStorageKey());
+      setWorkerCount(getDefaultWorkerCount());
+      setMyTurn(null);
+      setIsSetupEditing(true);
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [todayStorageKey]);
+
+  if (isAdminPage) {
+    return <AdminPage />;
+  }
 
   return (
     <main className="min-h-screen bg-slate-200 flex justify-center">
