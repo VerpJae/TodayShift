@@ -1,12 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "todayshift",
+  "main": "./worker/index.ts",
   "compatibility_date": "2026-08-10",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": ["/reset"]
   },
   "compatibility_flags": [
     "nodejs_compat"
