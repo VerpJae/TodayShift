@@ -1,146 +1,43 @@
 import Header from "./components/home/Header";
-import ShiftSelector from "./components/home/ShiftSelector";
+import WorkerCountSelector from "./components/home/WorkerCountSelector";
 import { useEffect, useState } from "react";
 import ScheduleCard from "./components/home/ScheduleCard";
 import { todaySchedule } from "./data/schedule";
 import TurnSelector from "./components/home/TurnSelector";
-import {
-  getTodayText,
-  getDefaultWorkerCount,
-} from "./utils/date";
+import { getTodayText } from "./utils/date";
 import CurrentShiftCard from "./components/home/CurrentShiftCard";
 import { APP_VERSION } from "./version";
 import AdminPage from "./components/admin/AdminPage";
 import UpdatePrompt from "./components/UpdatePrompt";
 import WeeklyOffDaySetting from "./components/home/WeeklyOffDaySetting";
-import { REMINDER_WORKER_URL } from "./config/reminder";
-
-type SavedTodaySetup = {
-  workerCount: number;
-  myTurn: number;
-};
-
-type TodayOffOverride = "off" | "work" | null;
-
-function getTodayStorageKey() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const date = String(today.getDate()).padStart(2, "0");
-
-  return `today-turn-setup:${year}-${month}-${date}`;
-}
-
-function getSavedTodaySetup(): SavedTodaySetup | null {
-  const saved = localStorage.getItem(getTodayStorageKey());
-
-  if (!saved) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(saved) as SavedTodaySetup;
-
-    return Number.isInteger(parsed.workerCount) && Number.isInteger(parsed.myTurn)
-      ? parsed
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function getWeeklyOffDays() {
-  const saved = localStorage.getItem("weekly-off-days");
-
-  if (!saved) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(saved) as number[];
-    return Array.isArray(parsed)
-      ? parsed.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function getTodayOffOverride(): TodayOffOverride {
-  const value = localStorage.getItem(`today-off-override:${getTodayStorageKey().slice(-10)}`);
-  return value === "off" || value === "work" ? value : null;
-}
+import { useTodaySetup } from "./hooks/useTodaySetup";
+import { useTodayOff } from "./hooks/useTodayOff";
+import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 
 function App() {
-  const [todayStorageKey, setTodayStorageKey] = useState(getTodayStorageKey);
-  const [savedTodaySetup] = useState(getSavedTodaySetup);
-  const [workerCount, setWorkerCount] = useState<number | null>(
-    savedTodaySetup?.workerCount ?? getDefaultWorkerCount(),
-  );
-  const [myTurn, setMyTurn] = useState<number | null>(savedTodaySetup?.myTurn ?? null);
-  const [isSetupEditing, setIsSetupEditing] = useState(!savedTodaySetup);
+  const {
+    todayStorageKey,
+    workerCount,
+    myTurn,
+    isSetupComplete,
+    isSetupEditing,
+    setIsSetupEditing,
+    selectWorkerCount,
+    selectMyTurn,
+  } = useTodaySetup();
+  const {
+    weeklyOffDays,
+    setWeeklyOffDays,
+    todayDay,
+    todayOffOverride,
+    isTodayOff,
+    updateTodayOffOverride,
+  } = useTodayOff(todayStorageKey);
   const [isAdminPage, setIsAdminPage] = useState(
     () => window.location.hash === "#/admin",
   );
-  const [weeklyOffDays, setWeeklyOffDays] = useState(getWeeklyOffDays);
-  const [todayOffOverride, setTodayOffOverride] = useState<TodayOffOverride>(getTodayOffOverride);
 
-  const isSetupComplete = workerCount !== null && myTurn !== null;
-  const todayDay = new Date().getDay();
-  const isTodayOff =
-    todayOffOverride === "off" ||
-    (todayOffOverride !== "work" && weeklyOffDays.includes(todayDay));
-
-  const updateTodayOffOverride = (override: TodayOffOverride) => {
-    const key = `today-off-override:${getTodayStorageKey().slice(-10)}`;
-
-    if (override) {
-      localStorage.setItem(key, override);
-    } else {
-      localStorage.removeItem(key);
-    }
-
-    setTodayOffOverride(override);
-  };
-
-  useEffect(() => {
-    if (!isSetupComplete || workerCount === null || myTurn === null) {
-      return;
-    }
-
-    localStorage.setItem(
-      todayStorageKey,
-      JSON.stringify({ workerCount, myTurn }),
-    );
-  }, [isSetupComplete, myTurn, todayStorageKey, workerCount]);
-
-  useEffect(() => {
-    if (
-      !("Notification" in window) ||
-      !("serviceWorker" in navigator) ||
-      Notification.permission !== "granted"
-    ) {
-      return;
-    }
-
-    void navigator.serviceWorker.ready
-      .then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => {
-        if (!subscription) {
-          return;
-        }
-
-        return fetch(`${REMINDER_WORKER_URL}/api/off-status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            endpoint: subscription.endpoint,
-            date: todayStorageKey.slice(-10),
-            isOff: isTodayOff,
-          }),
-        });
-      });
-  }, [isTodayOff, todayStorageKey]);
+  useServiceWorkerUpdate();
 
   useEffect(() => {
     const updatePage = () => setIsAdminPage(window.location.hash === "#/admin");
@@ -148,39 +45,6 @@ function App() {
     window.addEventListener("hashchange", updatePage);
     return () => window.removeEventListener("hashchange", updatePage);
   }, []);
-
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) {
-      return;
-    }
-
-    const checkForUpdate = () => {
-      void navigator.serviceWorker
-        .getRegistration()
-        .then((registration) => registration?.update());
-    };
-
-    checkForUpdate();
-    const intervalId = window.setInterval(checkForUpdate, 24 * 60 * 60_000);
-
-    return () => window.clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      if (getTodayStorageKey() === todayStorageKey) {
-        return;
-      }
-
-      setTodayStorageKey(getTodayStorageKey());
-      setWorkerCount(getDefaultWorkerCount());
-      setMyTurn(null);
-      setIsSetupEditing(true);
-      setTodayOffOverride(getTodayOffOverride());
-    }, 60_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [todayStorageKey]);
 
   if (isAdminPage) {
     return <AdminPage />;
@@ -258,21 +122,14 @@ function App() {
                   오늘 근무 인원 설정
                 </h2>
 
-                <ShiftSelector
+                <WorkerCountSelector
                   workerCount={workerCount}
-                  setWorkerCount={(count) => {
-                    setWorkerCount(count);
-                    setMyTurn(null);
-                    localStorage.removeItem(getTodayStorageKey());
-                  }}
+                  setWorkerCount={selectWorkerCount}
                 />
                 <TurnSelector
                   workerCount={workerCount}
                   myTurn={myTurn}
-                  setMyTurn={(turn) => {
-                    setMyTurn(turn);
-                    setIsSetupEditing(false);
-                  }}
+                  setMyTurn={selectMyTurn}
                 />
               </>
             )}

@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ScheduleItem } from "../../data/schedule";
+import {
+  buildScheduleView,
+  getCurrentMinutes,
+} from "../../utils/schedule";
 import NotificationSetting from "./NotificationSetting";
 
 type ScheduleCardProps = {
@@ -7,18 +11,6 @@ type ScheduleCardProps = {
   workerCount: number | null;
   myTurn: number | null;
 };
-
-function toMinutes(time: string | undefined) {
-  if (!time) {
-    return null;
-  }
-
-  const [hours, minutes] = time.split(":").map(Number);
-
-  return Number.isNaN(hours) || Number.isNaN(minutes)
-    ? null
-    : hours * 60 + minutes;
-}
 
 function ScheduleCard({
   schedule,
@@ -33,7 +25,11 @@ function ScheduleCard({
     return () => window.clearInterval(intervalId);
   }, []);
 
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentMinutes = getCurrentMinutes(now);
+  const scheduleView = useMemo(
+    () => buildScheduleView(schedule, workerCount),
+    [schedule, workerCount],
+  );
 
   return (
     <div className="rounded-xl border p-5">
@@ -53,18 +49,12 @@ function ScheduleCard({
         </p>
       ) : (
         <div className="space-y-2">
-            {(() => {
-                let workIndex = 0;
-
-                return schedule.map((item, index) => {
-                const startMinutes = toMinutes(item.start);
-                const endMinutes = toMinutes(item.end);
+            {scheduleView.map((item, index) => {
+                const { startMinutes, endMinutes } = item;
                 const isCurrent =
-                  startMinutes !== null &&
-                  endMinutes !== null &&
                   startMinutes <= currentMinutes &&
                   currentMinutes < endMinutes;
-                const isPast = endMinutes !== null && currentMinutes >= endMinutes;
+                const isPast = currentMinutes >= endMinutes;
                 const timeStateClass = isCurrent
                   ? "ring-2 ring-blue-600 shadow-lg"
                   : isPast
@@ -99,8 +89,7 @@ function ScheduleCard({
                     );
                 }
 
-                const turnNumber =
-                    (workIndex++ % workerCount) + 1;
+                const turnNumber = item.turnNumber;
 
                 const isMyTurn =
                     turnNumber === myTurn;
@@ -143,8 +132,7 @@ function ScheduleCard({
 
                     </div>
                 );
-                });
-            })()}
+                })}
         </div>
       )}
     </div>

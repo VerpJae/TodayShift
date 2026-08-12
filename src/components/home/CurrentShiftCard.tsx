@@ -1,35 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ScheduleItem } from "../../data/schedule";
+import {
+  buildScheduleView,
+  getCurrentMinutes,
+} from "../../utils/schedule";
 
 type CurrentShiftCardProps = {
   schedule: ScheduleItem[];
   workerCount: number | null;
   myTurn: number | null;
 };
-
-type TimedScheduleItem = ScheduleItem & {
-  startMinutes: number;
-  endMinutes: number;
-  turnNumber: number | null;
-};
-
-function toMinutes(time: string | undefined) {
-  if (!time) {
-    return null;
-  }
-
-  const [hours, minutes] = time.split(":").map(Number);
-
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-    return null;
-  }
-
-  return hours * 60 + minutes;
-}
-
-function getCurrentMinutes(date: Date) {
-  return date.getHours() * 60 + date.getMinutes();
-}
 
 function formatRemaining(minutes: number) {
   const hours = Math.floor(minutes / 60);
@@ -55,25 +35,10 @@ function CurrentShiftCard({
     return () => window.clearInterval(intervalId);
   }, []);
 
-  const timedSchedule = useMemo<TimedScheduleItem[]>(() => {
-    let workIndex = 0;
-
-    return schedule.flatMap((item) => {
-      const startMinutes = toMinutes(item.start);
-      const endMinutes = toMinutes(item.end);
-
-      if (startMinutes === null || endMinutes === null) {
-        return [];
-      }
-
-      const turnNumber =
-        item.type === "work" && workerCount !== null
-          ? (workIndex++ % workerCount) + 1
-          : null;
-
-      return [{ ...item, startMinutes, endMinutes, turnNumber }];
-    });
-  }, [schedule, workerCount]);
+  const timedSchedule = useMemo(
+    () => buildScheduleView(schedule, workerCount),
+    [schedule, workerCount],
+  );
 
   if (workerCount === null || myTurn === null) {
     return (

@@ -1,9 +1,15 @@
-export type ScheduleItem = {
-  type: "work" | "break";
-  start?: string;
-  end?: string;
-  label?: string;
-};
+export type ScheduleItem =
+  | {
+      type: "work";
+      start: string;
+      end: string;
+    }
+  | {
+      type: "break";
+      start: string;
+      end: string;
+      label: string;
+    };
 
 
 export const todaySchedule: ScheduleItem[] = [
