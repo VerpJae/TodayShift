@@ -21,7 +21,7 @@ export function useTodaySetup() {
   }, [isSetupComplete, myTurn, todayStorageKey, workerCount]);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
+    const syncCurrentDate = () => {
       const nextStorageKey = getTodayStorageKey();
       if (nextStorageKey === todayStorageKey) return;
 
@@ -29,9 +29,23 @@ export function useTodaySetup() {
       setWorkerCount(getDefaultWorkerCount());
       setMyTurn(null);
       setIsSetupEditing(true);
-    }, 60_000);
+    };
 
-    return () => window.clearInterval(intervalId);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncCurrentDate();
+      }
+    };
+
+    window.addEventListener("pageshow", syncCurrentDate);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    const intervalId = window.setInterval(syncCurrentDate, 60_000);
+
+    return () => {
+      window.removeEventListener("pageshow", syncCurrentDate);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.clearInterval(intervalId);
+    };
   }, [todayStorageKey]);
 
   const selectWorkerCount = (count: number) => {

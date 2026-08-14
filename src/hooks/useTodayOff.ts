@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { REMINDER_WORKER_URL } from "../config/reminder";
 import {
   getDateFromStorageKey,
@@ -26,7 +26,7 @@ export function useTodayOff(todayStorageKey: string) {
     todayOffOverride === "off" ||
     (todayOffOverride !== "work" && weeklyOffDays.includes(todayDay));
 
-  useEffect(() => {
+  const syncTodayOff = useCallback(async (subscription?: PushSubscription | null) => {
     if (
       !("Notification" in window) ||
       !("serviceWorker" in navigator) ||
@@ -35,22 +35,46 @@ export function useTodayOff(todayStorageKey: string) {
       return;
     }
 
-    void navigator.serviceWorker.ready
-      .then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => {
-        if (!subscription) return;
+    const activeSubscription =
+      subscription ??
+      (await navigator.serviceWorker.ready.then((registration) =>
+        registration.pushManager.getSubscription(),
+      ));
 
-        return fetch(`${REMINDER_WORKER_URL}/api/off-status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            endpoint: subscription.endpoint,
-            date: getDateFromStorageKey(todayStorageKey),
-            isOff: isTodayOff,
-          }),
-        });
-      });
-  }, [isTodayOff, todayStorageKey]);
+    if (!activeSubscription) return;
+
+    await fetch(`${REMINDER_WORKER_URL}/api/off-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        endpoint: activeSubscription.endpoint,
+        date: getDateFromStorageKey(todayStorageKey),
+        isOff: isTodayOff,
+        weeklyOffDays,
+      }),
+    });
+  }, [isTodayOff, todayStorageKey, weeklyOffDays]);
+
+  useEffect(() => {
+    void syncTodayOff();
+  }, [syncTodayOff]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncTodayOff();
+      }
+    };
+    const handlePageShow = () => void syncTodayOff();
+
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [syncTodayOff]);
 
   const updateTodayOffOverride = (override: TodayOffOverride) => {
     writeTodayOffOverride(todayStorageKey, override);
@@ -64,5 +88,6 @@ export function useTodayOff(todayStorageKey: string) {
     todayOffOverride,
     isTodayOff,
     updateTodayOffOverride,
+    syncTodayOff,
   };
 }

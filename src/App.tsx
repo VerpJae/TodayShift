@@ -32,6 +32,7 @@ function App() {
     todayOffOverride,
     isTodayOff,
     updateTodayOffOverride,
+    syncTodayOff,
   } = useTodayOff(todayStorageKey);
   const [isAdminPage, setIsAdminPage] = useState(
     () => window.location.hash === "#/admin",
@@ -145,6 +146,7 @@ function App() {
             schedule={todaySchedule}
             workerCount={workerCount}
             myTurn={myTurn}
+            onNotificationSubscribed={syncTodayOff}
           />
         </section>
 

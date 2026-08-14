@@ -6,6 +6,7 @@ type NotificationSettingProps = {
   schedule: ScheduleItem[];
   workerCount: number | null;
   myTurn: number | null;
+  onSubscribed: (subscription: PushSubscription) => Promise<void>;
 };
 
 const REMINDER_OPTIONS = [0, 3, 5];
@@ -48,6 +49,7 @@ function NotificationSetting({
   schedule,
   workerCount,
   myTurn,
+  onSubscribed,
 }: NotificationSettingProps) {
   const [permission, setPermission] = useState(
     "Notification" in window ? Notification.permission : "denied",
@@ -108,6 +110,7 @@ function NotificationSetting({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subscription: subscription.toJSON() }),
     });
+    await onSubscribed(subscription);
 
     if (workerCount !== null && myTurn !== null) {
       await saveSettings(schedule, workerCount, myTurn, reminderOffsets);

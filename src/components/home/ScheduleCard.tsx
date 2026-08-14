@@ -10,12 +10,14 @@ type ScheduleCardProps = {
   schedule: ScheduleItem[];
   workerCount: number | null;
   myTurn: number | null;
+  onNotificationSubscribed: (subscription: PushSubscription) => Promise<void>;
 };
 
 function ScheduleCard({
   schedule,
   workerCount,
   myTurn,
+  onNotificationSubscribed,
 }: ScheduleCardProps) {
   const [now, setNow] = useState(() => new Date());
 
@@ -41,6 +43,7 @@ function ScheduleCard({
         schedule={schedule}
         workerCount={workerCount}
         myTurn={myTurn}
+        onSubscribed={onNotificationSubscribed}
       />
 
       {workerCount === null ? (
