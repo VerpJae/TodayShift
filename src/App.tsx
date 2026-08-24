@@ -22,18 +22,20 @@ function App() {
   }, []);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 px-5 py-10 text-slate-900">
-      <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl shadow-slate-300/40">
-        <h1 className="text-2xl font-bold tracking-tight">
-          TodayShift 운영을 종료했습니다.
-        </h1>
-        <p className="mt-5 leading-7 text-slate-600">
-          현재는 더 이상 사용하지 않아 서비스를 닫아두었습니다.
-        </p>
-        <p className="mt-3 leading-7 text-slate-600">
-          다시 사용하고 싶다면 저에게 따로 연락해주세요.
-        </p>
-      </section>
+    <main className="min-h-screen bg-slate-100 px-3 py-4 sm:px-6 sm:py-8">
+      <a
+        href="/farewell.jpg"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="손편지 원본 이미지 보기"
+        className="mx-auto block w-full max-w-4xl"
+      >
+        <img
+          src="/farewell.jpg"
+          alt="TodayShift 운영 종료 손편지"
+          className="block h-auto w-full"
+        />
+      </a>
     </main>
   );
 }
